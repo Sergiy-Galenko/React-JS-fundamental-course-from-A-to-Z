@@ -1,7 +1,8 @@
-import React, { useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 import PostList from "./components/PostList";
 import "./components/styles/App.css";
-import MyButton from "./components/UI/button/MyButton";
+import PostForm from "./components/PostForm";
+import MySelect from "./components/UI/select/MySelect";
 import MyInput from "./components/UI/input/MyInput";
 
 function App() {
@@ -11,34 +12,55 @@ function App() {
         { id: 3, title: "Node.js", body: "JavaScript runtime" },
     ]);
 
-    const [post, setPost] = useState({ title: "", body: "" });
+    const [selectedSort, setSelectSort] = useState("");
+    const [searchQuery, setSearchQuery] = useState("");
 
-    const addNewPost = (e) => {
-        e.preventDefault();
-        setPosts([...posts, {...post, id: Date.now()}]);
-        setPost({ title: "", body: "" });
+    const sortedPost = useMemo(() => {
+        if(selectedSort){
+            return [...posts].sort((a, b) => a[selectedSort].localeCompare(b[selectedSort]))
+        }
+        return posts;
+
+    },[selectedSort, posts]);
+
+    const sordedAndSearchedPost = useMemo(() => {
+        return  sortedPost.filter(post => post.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    }, [searchQuery, sortedPost])
+
+    const createPost = (newPost) => {
+        setPosts([...posts, newPost]);
+    };
+
+    const sortPost = (sort) => {
+        setSelectSort(sort);
+        setPosts(sortedPost);
+    };
+
+    const removePost = (post) => {
+        setPosts(posts.filter((p) => p.id !== post.id));
     };
 
     return (
         <div className="App">
-            <form>
+            <PostForm create={createPost} />
+            <hr style={{ margin: "15px 0" }} />
+            <div>
                 <MyInput
-                    value={post.title}
-                    onChange={(e) =>
-                        setPost({ ...post, title: e.target.value })
-                    }
-                    type="text"
-                    placeholder="name post"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholer="Search..."
                 />
-                <MyInput
-                    value={post.body}
-                    onChange={(e) => setPost({ ...post, body: e.target.value })}
-                    type="text"
-                    placeholder="description post"
+                <MySelect
+                    value={selectedSort}
+                    onChange={sortPost}
+                    defautValue="Sorted"
+                    option={[
+                        { value: "title", name: "By name" },
+                        { value: "body", name: "By body" },
+                    ]}
                 />
-                <MyButton onClick={addNewPost}>create post</MyButton>
-            </form>
-            <PostList posts={posts} title="List post 1" />
+            </div>
+            <PostList remove={removePost} posts={sordedAndSearchedPost} title="List of Posts"  />
         </div>
     );
 }
